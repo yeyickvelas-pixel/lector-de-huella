@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, AlertCircle, WifiOff, Lock, MapPin } from 'lucide-react';
+import {
+  CheckCircle2, AlertCircle, WifiOff, Lock, MapPin, SwitchCamera,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import {
-  loadFaceModels,
-  buildMatcher,
-  matchFromVideo,
-  distanceMeters,
+  loadFaceModels, buildMatcher, matchFromVideo, distanceMeters,
 } from '../../lib/face';
+import { captureFrame, uploadPhoto } from '../../lib/photo';
 import { enqueueRegistro, listPending, syncPending } from '../../lib/offlineQueue';
+import NotaModal from '../../components/NotaModal';
+import '../../components/FaceEnrollModal.css';
 import './Kiosk.css';
 
 const getPosition = () =>
@@ -24,6 +26,25 @@ const getPosition = () =>
     );
   });
 
+// Devuelve { fueraDeHorario, motivo } según hora_entrada/salida del empleado
+function checkHorario(tipo, empleado, when = new Date()) {
+  const t = tipo === 'entrada' ? empleado.hora_entrada : empleado.hora_salida;
+  if (!t) return { fueraDeHorario: false };
+  const [hh, mm] = t.split(':').map(Number);
+  const expected = new Date(when);
+  expected.setHours(hh, mm, 0, 0);
+  const diffMin = (when - expected) / 60000;
+  // Entrada anticipada > 5 min antes → pedir nota
+  if (tipo === 'entrada' && diffMin < -5) {
+    return { fueraDeHorario: true, motivo: `Llegaste ${Math.abs(Math.round(diffMin))} min antes del horario (${t})` };
+  }
+  // Salida tardía > 5 min después → pedir nota
+  if (tipo === 'salida' && diffMin > 5) {
+    return { fueraDeHorario: true, motivo: `Saliste ${Math.round(diffMin)} min después del horario (${t})` };
+  }
+  return { fueraDeHorario: false };
+}
+
 const Kiosk = () => {
   const { session, profile, loading: authLoading } = useAuth();
   const videoRef = useRef(null);
@@ -33,6 +54,7 @@ const Kiosk = () => {
   const lastMatchRef = useRef({ id: null, at: 0 });
   const detectLoopRef = useRef(null);
   const profileRef = useRef(profile);
+  const pausedRef = useRef(false);
 
   const [now, setNow] = useState(new Date());
   const [stage, setStage] = useState('init');
@@ -40,6 +62,8 @@ const Kiosk = () => {
   const [lastResult, setLastResult] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [facing, setFacing] = useState('user'); // 'user' | 'environment'
+  const [notaPrompt, setNotaPrompt] = useState(null); // { empleado, tipo, motivo, payload }
 
   useEffect(() => { profileRef.current = profile; }, [profile]);
 
@@ -71,14 +95,49 @@ const Kiosk = () => {
     syncPending().then(refreshPending);
   }, [isOnline, session, refreshPending]);
 
-  // Setup completo cuando hay sesión
   useEffect(() => {
     if (!session) return;
     let canceled = false;
 
     const resetIdle = () => {
+      pausedRef.current = false;
       setStage('scanning');
       setMessage('Mira a la cámara para marcar tu asistencia');
+    };
+
+    const saveRegistro = async (empleado, tipo, pos, nota) => {
+      const clientId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`;
+
+      // Capturar foto y subirla
+      let foto_url = null;
+      try {
+        if (videoRef.current) {
+          const blob = await captureFrame(videoRef.current);
+          const up = await uploadPhoto(session.user.id, clientId, blob);
+          foto_url = up?.url ?? null;
+        }
+      } catch (e) {
+        console.warn('photo upload failed', e);
+      }
+
+      await enqueueRegistro({
+        client_id: clientId,
+        empleado_id: empleado.id,
+        tipo,
+        fecha_hora: new Date().toISOString(),
+        lat: pos?.lat ?? null,
+        lng: pos?.lng ?? null,
+        nota,
+        foto_url,
+      });
+      await syncPending();
+      await refreshPending();
+
+      setLastResult({ nombre: empleado.nombre, tipo, time: new Date() });
+      setMessage(`${tipo === 'entrada' ? 'Entrada' : 'Salida'} registrada`);
+      setTimeout(resetIdle, 3500);
     };
 
     const handleMatch = async (empleadoId) => {
@@ -88,6 +147,7 @@ const Kiosk = () => {
       if (lastMatchRef.current.id === empleadoId && t - lastMatchRef.current.at < 8000) return;
       lastMatchRef.current = { id: empleadoId, at: t };
 
+      pausedRef.current = true;
       setStage('success');
       setMessage(`Identificado: ${empleado.nombre}`);
 
@@ -103,6 +163,7 @@ const Kiosk = () => {
         }
       }
 
+      // Decidir entrada o salida
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
       const { data: ultimos } = await supabase
@@ -114,29 +175,39 @@ const Kiosk = () => {
         .limit(1);
       const tipo = ultimos?.[0]?.tipo === 'entrada' ? 'salida' : 'entrada';
 
-      await enqueueRegistro({
-        empleado_id: empleadoId,
-        tipo,
-        fecha_hora: new Date().toISOString(),
-        lat: pos?.lat ?? null,
-        lng: pos?.lng ?? null,
-      });
-      await syncPending();
-      await refreshPending();
+      // ¿Fuera de horario? → pedir nota
+      const horario = checkHorario(tipo, empleado);
+      if (horario.fueraDeHorario) {
+        setNotaPrompt({
+          empleado,
+          tipo,
+          motivo: horario.motivo,
+          payload: { pos },
+        });
+        return; // se completa al cerrar el modal
+      }
 
-      setLastResult({ nombre: empleado.nombre, tipo, time: new Date() });
-      setMessage(`${tipo === 'entrada' ? 'Entrada' : 'Salida'} registrada`);
-      setTimeout(resetIdle, 3500);
+      await saveRegistro(empleado, tipo, pos, null);
+    };
+
+    // Exponer al modal
+    window.__kioskCompleteWithNota = async (nota) => {
+      if (!notaPrompt) return;
+      const { empleado, tipo, payload } = notaPrompt;
+      setNotaPrompt(null);
+      await saveRegistro(empleado, tipo, payload.pos, nota);
     };
 
     const startDetectLoop = () => {
       const tick = async () => {
-        if (canceled || !videoRef.current || !matcherRef.current) return;
-        try {
-          const res = await matchFromVideo(videoRef.current, matcherRef.current);
-          if (res) await handleMatch(res.empleadoId);
-        } catch (e) {
-          console.warn('detect error', e);
+        if (canceled) return;
+        if (!pausedRef.current && videoRef.current && matcherRef.current) {
+          try {
+            const res = await matchFromVideo(videoRef.current, matcherRef.current);
+            if (res) await handleMatch(res.empleadoId);
+          } catch (e) {
+            console.warn('detect error', e);
+          }
         }
         detectLoopRef.current = setTimeout(tick, 600);
       };
@@ -152,7 +223,7 @@ const Kiosk = () => {
         setMessage('Cargando empleados…');
         const { data: empleados, error } = await supabase
           .from('empleados')
-          .select('id, nombre, face_descriptors')
+          .select('id, nombre, face_descriptors, hora_entrada, hora_salida')
           .eq('admin_id', session.user.id);
         if (error) throw new Error(error.message);
 
@@ -163,13 +234,13 @@ const Kiosk = () => {
 
         if (!matcherRef.current) {
           setStage('error');
-          setMessage('No hay empleados con rostro registrado. Ve a Admin para registrarlos.');
+          setMessage('No hay empleados con rostro registrado. Ve a Admin.');
           return;
         }
 
         setMessage('Iniciando cámara…');
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: 640, height: 480 },
+          video: { facingMode: facing, width: 640, height: 480 },
         });
         if (canceled) { stream.getTracks().forEach((t) => t.stop()); return; }
         streamRef.current = stream;
@@ -191,8 +262,11 @@ const Kiosk = () => {
       canceled = true;
       if (detectLoopRef.current) clearTimeout(detectLoopRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      delete window.__kioskCompleteWithNota;
     };
-  }, [session, refreshPending]);
+  }, [session, refreshPending, facing, notaPrompt]);
+
+  const toggleCamera = () => setFacing((f) => (f === 'user' ? 'environment' : 'user'));
 
   if (authLoading) return <div className="kiosk-container glass-panel">Cargando…</div>;
 
@@ -224,6 +298,9 @@ const Kiosk = () => {
 
       <div className="video-wrap">
         <video ref={videoRef} muted playsInline />
+        <button className="cam-switch" onClick={toggleCamera} title="Cambiar cámara">
+          <SwitchCamera size={18} />
+        </button>
         {stage === 'success' && <div className="overlay-success"><CheckCircle2 size={80} color="#10b981" /></div>}
         {stage === 'error'   && <div className="overlay-error"><AlertCircle size={80} color="#ef4444" /></div>}
       </div>
@@ -248,6 +325,16 @@ const Kiosk = () => {
         <div className="kiosk-pending">
           {pendingCount} pendiente{pendingCount === 1 ? '' : 's'} de subir
         </div>
+      )}
+
+      {notaPrompt && (
+        <NotaModal
+          empleado={notaPrompt.empleado}
+          tipo={notaPrompt.tipo}
+          motivo={notaPrompt.motivo}
+          onSave={(nota) => window.__kioskCompleteWithNota?.(nota)}
+          onSkip={() => window.__kioskCompleteWithNota?.(null)}
+        />
       )}
     </div>
   );

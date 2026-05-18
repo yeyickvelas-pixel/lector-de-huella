@@ -1,19 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Camera, Trash2, UserPlus, MapPin } from 'lucide-react';
+import { Camera, Trash2, UserPlus, MapPin, Edit2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import FaceEnrollModal from '../../components/FaceEnrollModal';
+import EditEmpleadoModal from './EditEmpleadoModal';
+import RegistrosTab from './RegistrosTab';
 import '../../components/FaceEnrollModal.css';
 import './Admin.css';
 
 const Admin = () => {
   const { user, profile, isSuperAdmin } = useAuth();
+  const [tab, setTab] = useState('empleados');
   const [empleados, setEmpleados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nombre, setNombre] = useState('');
   const [puesto, setPuesto] = useState('');
   const [creating, setCreating] = useState(false);
   const [enrollFor, setEnrollFor] = useState(null);
+  const [editingEmpleado, setEditingEmpleado] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [savingOffice, setSavingOffice] = useState(false);
@@ -23,7 +27,7 @@ const Admin = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('empleados')
-      .select('id, nombre, puesto, face_descriptors, enrolled_at')
+      .select('id, nombre, puesto, face_descriptors, enrolled_at, hora_entrada, hora_salida')
       .order('created_at', { ascending: false });
     if (error) setError(error.message);
     setEmpleados(data ?? []);
@@ -40,7 +44,6 @@ const Admin = () => {
     if (!nombre.trim()) return;
     setError(null); setSuccess(null);
     setCreating(true);
-
     const { data, error } = await supabase
       .from('empleados')
       .insert({
@@ -50,7 +53,6 @@ const Admin = () => {
       })
       .select()
       .single();
-
     setCreating(false);
     if (error) { setError(error.message); return; }
     setNombre(''); setPuesto('');
@@ -86,10 +88,7 @@ const Admin = () => {
     setSavingOffice(true);
     try {
       const pos = await new Promise((res, rej) => {
-        navigator.geolocation.getCurrentPosition(res, rej, {
-          enableHighAccuracy: true,
-          timeout: 8000,
-        });
+        navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 });
       });
       const { error } = await supabase
         .from('profiles')
@@ -111,107 +110,134 @@ const Admin = () => {
   return (
     <div className="admin-container">
       <div className="admin-header">
-        <h2>Empleados {isSuperAdmin && <small style={{ opacity: 0.6 }}>(vista global)</small>}</h2>
+        <h2>Panel admin {isSuperAdmin && <small style={{ opacity: 0.6 }}>(vista global)</small>}</h2>
       </div>
 
-      <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem' }}>
-        <strong style={{ display: 'block', marginBottom: '0.5rem' }}>
-          <MapPin size={16} style={{ verticalAlign: 'middle' }} /> Ubicación oficina
-        </strong>
-        <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: '0 0 0.5rem' }}>
-          {profile?.oficina_lat
-            ? `Lat ${profile.oficina_lat.toFixed(5)}, Lng ${profile.oficina_lng.toFixed(5)} — radio ${profile.oficina_radio}m`
-            : 'Sin definir. Párate en la entrada de tu oficina y pulsa "Capturar".'}
-        </p>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <input
-            type="number"
-            min="20"
-            max="2000"
-            value={radio}
-            onChange={(e) => setRadio(e.target.value)}
-            style={{ width: 100, padding: '0.45rem 0.6rem', borderRadius: 8, border: '1px solid #d1d5db' }}
-            title="Radio en metros"
-          />
-          <span style={{ fontSize: '0.85rem' }}>metros</span>
-          <button className="btn btn-primary" onClick={handleSetOffice} disabled={savingOffice}>
-            {savingOffice ? 'Capturando…' : 'Capturar mi ubicación'}
-          </button>
-        </div>
+      <div className="tabs">
+        <button
+          className={`tab ${tab === 'empleados' ? 'active' : ''}`}
+          onClick={() => setTab('empleados')}
+        >Empleados</button>
+        <button
+          className={`tab ${tab === 'registros' ? 'active' : ''}`}
+          onClick={() => setTab('registros')}
+        >Registros</button>
       </div>
 
-      <form className="add-form glass-panel" onSubmit={handleCreate} style={{ padding: '1rem' }}>
-        <input
-          type="text"
-          placeholder="Nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Puesto (opcional)"
-          value={puesto}
-          onChange={(e) => setPuesto(e.target.value)}
-        />
-        <button type="submit" className="btn btn-primary" disabled={creating}>
-          <UserPlus size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-          {creating ? 'Creando…' : 'Agregar'}
-        </button>
-      </form>
+      {tab === 'empleados' && (
+        <>
+          <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem' }}>
+            <strong style={{ display: 'block', marginBottom: '0.5rem' }}>
+              <MapPin size={16} style={{ verticalAlign: 'middle' }} /> Ubicación oficina
+            </strong>
+            <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: '0 0 0.5rem' }}>
+              {profile?.oficina_lat
+                ? `Lat ${profile.oficina_lat.toFixed(5)}, Lng ${profile.oficina_lng.toFixed(5)} — radio ${profile.oficina_radio}m`
+                : 'Sin definir. Párate en la entrada de tu oficina y pulsa "Capturar".'}
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                type="number" min="20" max="2000" value={radio}
+                onChange={(e) => setRadio(e.target.value)}
+                style={{ width: 100, padding: '0.45rem 0.6rem', borderRadius: 8, border: '1px solid #d1d5db' }}
+                title="Radio en metros"
+              />
+              <span style={{ fontSize: '0.85rem' }}>metros</span>
+              <button className="btn btn-primary" onClick={handleSetOffice} disabled={savingOffice}>
+                {savingOffice ? 'Capturando…' : 'Capturar mi ubicación'}
+              </button>
+            </div>
+          </div>
 
-      {error && <div className="error-msg">{error}</div>}
-      {success && <div className="success-msg">{success}</div>}
+          <form className="add-form glass-panel" onSubmit={handleCreate} style={{ padding: '1rem' }}>
+            <input
+              type="text" placeholder="Nombre" value={nombre}
+              onChange={(e) => setNombre(e.target.value)} required
+            />
+            <input
+              type="text" placeholder="Puesto (opcional)" value={puesto}
+              onChange={(e) => setPuesto(e.target.value)}
+            />
+            <button type="submit" className="btn btn-primary" disabled={creating}>
+              <UserPlus size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+              {creating ? 'Creando…' : 'Agregar'}
+            </button>
+          </form>
 
-      <div className="glass-panel" style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
-        {loading ? (
-          <div className="empty-state">Cargando…</div>
-        ) : empleados.length === 0 ? (
-          <div className="empty-state">Aún no hay empleados.</div>
-        ) : (
-          <table className="empleados-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Puesto</th>
-                <th>Rostro</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {empleados.map((e) => {
-                const enrolled = Array.isArray(e.face_descriptors) && e.face_descriptors.length > 0;
-                return (
-                  <tr key={e.id}>
-                    <td>{e.nombre}</td>
-                    <td>{e.puesto || '—'}</td>
-                    <td>
-                      {enrolled
-                        ? <span className="status-badge enrolled">Registrado</span>
-                        : <span className="status-badge pending">Pendiente</span>}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn-ghost" onClick={() => setEnrollFor(e)}>
-                        <Camera size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-                        {enrolled ? 'Re-registrar' : 'Registrar rostro'}
-                      </button>{' '}
-                      <button className="btn btn-ghost" onClick={() => handleDelete(e)}>
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
+          {error && <div className="error-msg">{error}</div>}
+          {success && <div className="success-msg">{success}</div>}
+
+          <div className="glass-panel" style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
+            {loading ? (
+              <div className="empty-state">Cargando…</div>
+            ) : empleados.length === 0 ? (
+              <div className="empty-state">Aún no hay empleados.</div>
+            ) : (
+              <table className="empleados-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Puesto</th>
+                    <th>Horario</th>
+                    <th>Rostro</th>
+                    <th></th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {empleados.map((e) => {
+                    const enrolled = Array.isArray(e.face_descriptors) && e.face_descriptors.length > 0;
+                    const horario = e.hora_entrada && e.hora_salida
+                      ? `${e.hora_entrada.slice(0,5)} – ${e.hora_salida.slice(0,5)}`
+                      : (e.hora_entrada || e.hora_salida ? (e.hora_entrada?.slice(0,5) || '?') + ' – ' + (e.hora_salida?.slice(0,5) || '?') : '—');
+                    return (
+                      <tr key={e.id}>
+                        <td>{e.nombre}</td>
+                        <td>{e.puesto || '—'}</td>
+                        <td>{horario}</td>
+                        <td>
+                          {enrolled
+                            ? <span className="status-badge enrolled">Registrado</span>
+                            : <span className="status-badge pending">Pendiente</span>}
+                        </td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <button className="btn btn-ghost" onClick={() => setEnrollFor(e)} title="Rostro">
+                            <Camera size={14} />
+                          </button>{' '}
+                          <button className="btn btn-ghost" onClick={() => setEditingEmpleado(e)} title="Editar">
+                            <Edit2 size={14} />
+                          </button>{' '}
+                          <button className="btn btn-ghost" onClick={() => handleDelete(e)} title="Borrar">
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'registros' && <RegistrosTab />}
 
       {enrollFor && (
         <FaceEnrollModal
           empleado={enrollFor}
           onClose={() => setEnrollFor(null)}
           onSaved={handleEnrollSaved}
+        />
+      )}
+
+      {editingEmpleado && (
+        <EditEmpleadoModal
+          empleado={editingEmpleado}
+          onClose={() => setEditingEmpleado(null)}
+          onSaved={(updated) => {
+            setEditingEmpleado(null);
+            setEmpleados((prev) => prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e)));
+          }}
         />
       )}
     </div>

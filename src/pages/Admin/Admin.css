@@ -103,6 +103,28 @@
   font-size: 0.9rem;
 }
 
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 1rem;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-size: 0.95rem;
+}
+
+.tab.active {
+  color: var(--text-primary);
+  border-bottom-color: #4f46e5;
+}
+
 @media (max-width: 640px) {
   .add-form { grid-template-columns: 1fr; }
   .empleados-table th:nth-child(2),

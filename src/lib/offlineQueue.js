@@ -59,6 +59,8 @@ export async function syncPending() {
         fecha_hora: row.fecha_hora,
         lat: row.lat,
         lng: row.lng,
+        nota: row.nota ?? null,
+        foto_url: row.foto_url ?? null,
         client_id: row.client_id,
       });
       if (!error || error.code === '23505') {

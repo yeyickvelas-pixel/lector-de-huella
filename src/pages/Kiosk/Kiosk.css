@@ -132,3 +132,22 @@
   align-items: center;
   gap: 0.3rem;
 }
+
+.cam-switch {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.cam-switch:hover { background: rgba(0, 0, 0, 0.75); }
