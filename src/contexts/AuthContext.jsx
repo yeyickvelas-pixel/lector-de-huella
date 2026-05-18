@@ -1,0 +1,64 @@
+import { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(null);
+  const [empleado, setEmpleado] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const userId = session?.user?.id;
+
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setSession(data.session ?? null);
+      setLoading(false);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!userId) {
+        if (active) setEmpleado(null);
+        return;
+      }
+      const { data } = await supabase
+        .from('empleados')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (active) setEmpleado(data ?? null);
+    })();
+    return () => { active = false; };
+  }, [userId]);
+
+  const value = {
+    session,
+    user: session?.user ?? null,
+    empleado,
+    loading,
+    signOut: () => supabase.auth.signOut(),
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth fuera de AuthProvider');
+  return ctx;
+}

@@ -1,0 +1,92 @@
+import { openDB } from 'idb';
+import { supabase } from './supabase';
+
+const DB_NAME = 'asistapp';
+const DB_VERSION = 1;
+const STORE = 'pending_registros';
+
+function dbPromise() {
+  return openDB(DB_NAME, DB_VERSION, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.createObjectStore(STORE, { keyPath: 'client_id' });
+      }
+    },
+  });
+}
+
+function uuid() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+export async function enqueueRegistro(registro) {
+  const db = await dbPromise();
+  const row = { client_id: uuid(), ...registro };
+  await db.put(STORE, row);
+  return row;
+}
+
+export async function listPending() {
+  const db = await dbPromise();
+  return db.getAll(STORE);
+}
+
+export async function removePending(client_id) {
+  const db = await dbPromise();
+  await db.delete(STORE, client_id);
+}
+
+let syncing = false;
+
+export async function syncPending() {
+  if (syncing) return { synced: 0, skipped: true };
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return { synced: 0, offline: true };
+  }
+  syncing = true;
+  let synced = 0;
+  try {
+    const pending = await listPending();
+    for (const row of pending) {
+      const { error } = await supabase.from('registros').insert({
+        empleado_id: row.empleado_id,
+        tipo: row.tipo,
+        fecha_hora: row.fecha_hora,
+        lat: row.lat,
+        lng: row.lng,
+        client_id: row.client_id,
+      });
+      // 23505 = unique_violation -> ya estaba subido, lo borramos local
+      if (!error || error.code === '23505') {
+        await removePending(row.client_id);
+        synced += 1;
+      } else {
+        // Error real (red, RLS, etc.) -> dejamos en cola y reintentamos luego
+        console.warn('No se pudo sincronizar registro', row.client_id, error);
+        break;
+      }
+    }
+  } finally {
+    syncing = false;
+  }
+  return { synced };
+}
+
+export function startAutoSync() {
+  if (typeof window === 'undefined') return () => {};
+  const handler = () => { syncPending(); };
+  window.addEventListener('online', handler);
+  // Intento al cargar
+  if (navigator.onLine) syncPending();
+  // Reintento periódico cada 60s por si algún error transitorio
+  const id = setInterval(() => { if (navigator.onLine) syncPending(); }, 60_000);
+  return () => {
+    window.removeEventListener('online', handler);
+    clearInterval(id);
+  };
+}
