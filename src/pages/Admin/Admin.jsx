@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import FaceEnrollModal from '../../components/FaceEnrollModal';
 import EditEmpleadoModal from './EditEmpleadoModal';
 import RegistrosTab from './RegistrosTab';
+import ReportesTab from './ReportesTab';
 import '../../components/FaceEnrollModal.css';
 import './Admin.css';
 
@@ -122,6 +123,10 @@ const Admin = () => {
           className={`tab ${tab === 'registros' ? 'active' : ''}`}
           onClick={() => setTab('registros')}
         >Registros</button>
+        <button
+          className={`tab ${tab === 'reportes' ? 'active' : ''}`}
+          onClick={() => setTab('reportes')}
+        >Reportes</button>
       </div>
 
       {tab === 'empleados' && (
@@ -221,6 +226,7 @@ const Admin = () => {
       )}
 
       {tab === 'registros' && <RegistrosTab />}
+      {tab === 'reportes' && <ReportesTab />}
 
       {enrollFor && (
         <FaceEnrollModal

@@ -41,6 +41,15 @@ export async function removePending(client_id) {
   await db.delete(STORE, client_id);
 }
 
+export async function updatePendingNota(client_id, nota) {
+  const db = await dbPromise();
+  const row = await db.get(STORE, client_id);
+  if (!row) return false;
+  row.nota = nota;
+  await db.put(STORE, row);
+  return true;
+}
+
 let syncing = false;
 
 export async function syncPending() {

@@ -14,6 +14,8 @@
     "@vladmandic/face-api": "^1.7.15",
     "date-fns": "^4.1.0",
     "idb": "^8.0.3",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.16.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

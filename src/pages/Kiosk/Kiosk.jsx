@@ -11,7 +11,7 @@ import {
   loadFaceModels, buildMatcher, matchFromVideo, distanceMeters,
 } from '../../lib/face';
 import { captureFrame, uploadPhoto } from '../../lib/photo';
-import { enqueueRegistro, listPending, syncPending } from '../../lib/offlineQueue';
+import { enqueueRegistro, listPending, syncPending, updatePendingNota } from '../../lib/offlineQueue';
 import NotaModal from '../../components/NotaModal';
 import '../../components/FaceEnrollModal.css';
 import './Kiosk.css';
@@ -64,6 +64,7 @@ const Kiosk = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [facing, setFacing] = useState('user'); // 'user' | 'environment'
   const [notaPrompt, setNotaPrompt] = useState(null); // { empleado, tipo, motivo, payload }
+  const [addNotaTo, setAddNotaTo] = useState(null); // { empleado, tipo, clientId }
 
   useEffect(() => { profileRef.current = profile; }, [profile]);
 
@@ -135,16 +136,25 @@ const Kiosk = () => {
       await syncPending();
       await refreshPending();
 
-      setLastResult({ nombre: empleado.nombre, tipo, time: new Date() });
+      setLastResult({ nombre: empleado.nombre, tipo, time: new Date(), clientId, empleadoId: empleado.id });
       setMessage(`${tipo === 'entrada' ? 'Entrada' : 'Salida'} registrada`);
-      setTimeout(resetIdle, 3500);
+      setTimeout(resetIdle, 8000);
     };
 
     const handleMatch = async (empleadoId) => {
       const empleado = empleadosByIdRef.current[empleadoId];
       if (!empleado) return;
       const t = Date.now();
-      if (lastMatchRef.current.id === empleadoId && t - lastMatchRef.current.at < 8000) return;
+      // Cooldown 2 minutos para evitar duplicados del mismo empleado
+      const COOLDOWN_MS = 2 * 60 * 1000;
+      if (lastMatchRef.current.id === empleadoId && t - lastMatchRef.current.at < COOLDOWN_MS) {
+        const restanteSeg = Math.ceil((COOLDOWN_MS - (t - lastMatchRef.current.at)) / 1000);
+        pausedRef.current = true;
+        setStage('error');
+        setMessage(`${empleado.nombre} ya tiene registro reciente. Espera ${restanteSeg}s.`);
+        setTimeout(resetIdle, 3000);
+        return;
+      }
       lastMatchRef.current = { id: empleadoId, at: t };
 
       pausedRef.current = true;
@@ -312,6 +322,18 @@ const Kiosk = () => {
       {lastResult && (
         <div className="kiosk-last">
           {format(lastResult.time, 'HH:mm:ss')} — {lastResult.nombre} ({lastResult.tipo})
+          {' '}
+          <button
+            className="btn btn-ghost"
+            style={{ padding: '0.2rem 0.6rem', fontSize: '0.78rem' }}
+            onClick={() => setAddNotaTo({
+              empleado: { nombre: lastResult.nombre, id: lastResult.empleadoId },
+              tipo: lastResult.tipo,
+              clientId: lastResult.clientId,
+            })}
+          >
+            + Agregar nota
+          </button>
         </div>
       )}
 
@@ -334,6 +356,25 @@ const Kiosk = () => {
           motivo={notaPrompt.motivo}
           onSave={(nota) => window.__kioskCompleteWithNota?.(nota)}
           onSkip={() => window.__kioskCompleteWithNota?.(null)}
+        />
+      )}
+
+      {addNotaTo && (
+        <NotaModal
+          empleado={addNotaTo.empleado}
+          tipo={addNotaTo.tipo}
+          onSave={async (nota) => {
+            if (!nota) { setAddNotaTo(null); return; }
+            // Intenta actualizar en BD por client_id
+            const { error } = await supabase
+              .from('registros')
+              .update({ nota })
+              .eq('client_id', addNotaTo.clientId);
+            // Si todavía está en cola offline, actualízala ahí
+            if (error) await updatePendingNota(addNotaTo.clientId, nota);
+            setAddNotaTo(null);
+          }}
+          onSkip={() => setAddNotaTo(null)}
         />
       )}
     </div>
