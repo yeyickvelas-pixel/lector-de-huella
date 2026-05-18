@@ -66,6 +66,8 @@
   margin-top: 1rem;
 }
 
+.admins-form { grid-template-columns: 1fr 1fr 1fr auto; }
+
 .add-form input {
   padding: 0.55rem 0.75rem;
   border: 1px solid #d1d5db;
@@ -125,8 +127,115 @@
   border-bottom-color: #4f46e5;
 }
 
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Cualquier glass-panel que contenga una tabla, hace scroll horizontal */
+.glass-panel:has(.empleados-table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.empleados-table {
+  min-width: 480px;
+}
+
+.tabs {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+  scrollbar-width: thin;
+}
+
+.tab { flex-shrink: 0; }
+
+/* Dashboard "Hoy" */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.dash-card {
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dash-card.active { border-color: rgba(16, 185, 129, 0.5); }
+.dash-card.late   { border-color: rgba(245, 158, 11, 0.5); }
+.dash-card.salido { opacity: 0.7; }
+
+.dash-name {
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot.active { background: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,0.18); }
+.dot.idle   { background: #94a3b8; }
+
+.dash-meta {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.dash-stats {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.2rem;
+}
+
+.dash-stats .stat {
+  font-size: 0.78rem;
+}
+
+.dash-stats .stat strong {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.dash-summary {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+  margin-bottom: 0.75rem;
+}
+
+.dash-summary div strong {
+  display: block;
+  font-size: 1.4rem;
+  color: var(--text-primary);
+}
+
 @media (max-width: 640px) {
-  .add-form { grid-template-columns: 1fr; }
+  .admin-container { padding: 0.5rem; }
+  .add-form { grid-template-columns: 1fr !important; }
+  .admin-header h2 { font-size: 1.2rem; }
+  .empleados-table th, .empleados-table td {
+    padding: 0.55rem 0.4rem;
+    font-size: 0.85rem;
+  }
+  /* Ocultar columnas menos importantes en móvil */
   .empleados-table th:nth-child(2),
   .empleados-table td:nth-child(2) { display: none; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .dash-summary div strong { font-size: 1.15rem; }
 }

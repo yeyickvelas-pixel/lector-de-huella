@@ -7,12 +7,13 @@ import EditEmpleadoModal from './EditEmpleadoModal';
 import RegistrosTab from './RegistrosTab';
 import ReportesTab from './ReportesTab';
 import AdminsTab from './AdminsTab';
+import HoyTab from './HoyTab';
 import '../../components/FaceEnrollModal.css';
 import './Admin.css';
 
 const Admin = () => {
   const { user, profile, isSuperAdmin } = useAuth();
-  const [tab, setTab] = useState('empleados');
+  const [tab, setTab] = useState('hoy');
   const [empleados, setEmpleados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nombre, setNombre] = useState('');
@@ -116,6 +117,10 @@ const Admin = () => {
       </div>
 
       <div className="tabs">
+        <button
+          className={`tab ${tab === 'hoy' ? 'active' : ''}`}
+          onClick={() => setTab('hoy')}
+        >Hoy</button>
         <button
           className={`tab ${tab === 'empleados' ? 'active' : ''}`}
           onClick={() => setTab('empleados')}
@@ -232,6 +237,7 @@ const Admin = () => {
         </>
       )}
 
+      {tab === 'hoy' && <HoyTab />}
       {tab === 'registros' && <RegistrosTab />}
       {tab === 'reportes' && <ReportesTab />}
       {tab === 'admins' && isSuperAdmin && <AdminsTab />}

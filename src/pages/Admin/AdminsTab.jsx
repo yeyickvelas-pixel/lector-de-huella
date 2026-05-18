@@ -73,7 +73,7 @@ const AdminsTab = () => {
   return (
     <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem' }}>
       <h3 style={{ marginTop: 0 }}>Agregar nuevo admin</h3>
-      <form onSubmit={handleCreate} className="add-form" style={{ gridTemplateColumns: '1fr 1fr 1fr auto' }}>
+      <form onSubmit={handleCreate} className="add-form admins-form">
         <input
           type="text" placeholder="Nombre"
           value={nombre} onChange={(e) => setNombre(e.target.value)} required

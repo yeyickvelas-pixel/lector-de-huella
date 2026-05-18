@@ -46,3 +46,12 @@
   object-fit: cover;
   transform: scaleX(-1); /* espejo */
 }
+
+@media (max-width: 640px) {
+  .modal-content {
+    padding: 1rem;
+    max-width: 100%;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+}
