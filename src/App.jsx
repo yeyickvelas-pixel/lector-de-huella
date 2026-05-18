@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import CheckIn from './pages/CheckIn/CheckIn';
+import Kiosk from './pages/Kiosk/Kiosk';
+import Admin from './pages/Admin/Admin';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import SetupNeeded from './pages/SetupNeeded';
@@ -36,16 +37,9 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route
-                path="/check-in"
-                element={
-                  <RequireAuth>
-                    <CheckIn />
-                  </RequireAuth>
-                }
-              />
-              <Route path="/" element={<Navigate to="/check-in" replace />} />
-              <Route path="*" element={<Navigate to="/check-in" replace />} />
+              <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
+              <Route path="/" element={<Kiosk />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
         </div>

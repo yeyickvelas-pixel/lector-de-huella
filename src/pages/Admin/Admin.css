@@ -1,0 +1,110 @@
+.admin-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.admin-header h2 { margin: 0; }
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.2));
+}
+
+.empleados-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.empleados-table th, .empleados-table td {
+  text-align: left;
+  padding: 0.7rem 0.5rem;
+  border-bottom: 1px solid var(--glass-border, rgba(255,255,255,0.1));
+  font-size: 0.92rem;
+}
+
+.empleados-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.add-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.add-form input {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: rgba(255,255,255,0.7);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.status-badge.enrolled { background: rgba(16,185,129,0.18); color: #047857; }
+.status-badge.pending  { background: rgba(245,158,11,0.18); color: #b45309; }
+
+.error-msg {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 0.55rem 0.8rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.success-msg {
+  background: #dcfce7;
+  color: #166534;
+  padding: 0.55rem 0.8rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .add-form { grid-template-columns: 1fr; }
+  .empleados-table th:nth-child(2),
+  .empleados-table td:nth-child(2) { display: none; }
+}

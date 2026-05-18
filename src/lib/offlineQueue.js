@@ -61,12 +61,10 @@ export async function syncPending() {
         lng: row.lng,
         client_id: row.client_id,
       });
-      // 23505 = unique_violation -> ya estaba subido, lo borramos local
       if (!error || error.code === '23505') {
         await removePending(row.client_id);
         synced += 1;
       } else {
-        // Error real (red, RLS, etc.) -> dejamos en cola y reintentamos luego
         console.warn('No se pudo sincronizar registro', row.client_id, error);
         break;
       }
@@ -81,9 +79,7 @@ export function startAutoSync() {
   if (typeof window === 'undefined') return () => {};
   const handler = () => { syncPending(); };
   window.addEventListener('online', handler);
-  // Intento al cargar
   if (navigator.onLine) syncPending();
-  // Reintento periódico cada 60s por si algún error transitorio
   const id = setInterval(() => { if (navigator.onLine) syncPending(); }, 60_000);
   return () => {
     window.removeEventListener('online', handler);

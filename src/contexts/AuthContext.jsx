@@ -5,7 +5,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
-  const [empleado, setEmpleado] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const userId = session?.user?.id;
 
@@ -32,15 +32,15 @@ export function AuthProvider({ children }) {
     let active = true;
     (async () => {
       if (!userId) {
-        if (active) setEmpleado(null);
+        if (active) setProfile(null);
         return;
       }
       const { data } = await supabase
-        .from('empleados')
+        .from('profiles')
         .select('*')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .maybeSingle();
-      if (active) setEmpleado(data ?? null);
+      if (active) setProfile(data ?? null);
     })();
     return () => { active = false; };
   }, [userId]);
@@ -48,7 +48,9 @@ export function AuthProvider({ children }) {
   const value = {
     session,
     user: session?.user ?? null,
-    empleado,
+    profile,
+    isSuperAdmin: profile?.role === 'super_admin',
+    isAdmin: profile?.role === 'admin' || profile?.role === 'super_admin',
     loading,
     signOut: () => supabase.auth.signOut(),
   };

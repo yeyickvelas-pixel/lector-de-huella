@@ -1,0 +1,134 @@
+.kiosk-container {
+  width: 100%;
+  max-width: 480px;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  margin: 1rem auto;
+}
+
+.kiosk-clock {
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: var(--accent-primary, #10b981);
+  letter-spacing: -1px;
+}
+
+.kiosk-date {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.kiosk-btn {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  color: var(--accent-primary, #10b981);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0.5rem 0;
+}
+
+.kiosk-btn:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.2);
+  transform: scale(1.04);
+}
+
+.kiosk-btn:disabled { cursor: default; }
+
+.kiosk-btn.success { background: rgba(16,185,129,0.2); border-color: #10b981; }
+.kiosk-btn.error   { background: rgba(239,68,68,0.1);  border-color: #ef4444; color: #ef4444; }
+
+.kiosk-instruction {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  min-height: 1.5em;
+}
+
+.kiosk-result {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.kiosk-result.success { color: #10b981; }
+.kiosk-result.error   { color: #ef4444; }
+
+.kiosk-offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.kiosk-pending {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.kiosk-locked {
+  background: rgba(0,0,0,0.25);
+  padding: 1.2rem;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.kiosk-container .video-wrap {
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 4/3;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.kiosk-container .video-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.overlay-success, .overlay-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  animation: pop 0.25s ease-out;
+}
+
+@keyframes pop {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.kiosk-last {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.kiosk-loc-tag {
+  font-size: 0.78rem;
+  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}

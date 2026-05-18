@@ -6,7 +6,7 @@ import './Auth.css';
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/check-in';
+  const from = location.state?.from?.pathname || '/admin';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
