@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Esquinas tipo "scan brackets" -->
+  <g stroke="white" stroke-width="22" stroke-linecap="round" fill="none">
+    <path d="M120 180 L120 130 Q120 120 130 120 L180 120"/>
+    <path d="M392 180 L392 130 Q392 120 382 120 L332 120"/>
+    <path d="M120 332 L120 382 Q120 392 130 392 L180 392"/>
+    <path d="M392 332 L392 382 Q392 392 382 392 L332 392"/>
+  </g>
+  <!-- Cara simplificada -->
+  <g fill="white">
+    <circle cx="208" cy="232" r="14"/>
+    <circle cx="304" cy="232" r="14"/>
+    <path d="M200 304 Q256 348 312 304" stroke="white" stroke-width="14" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>
