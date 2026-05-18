@@ -4,7 +4,6 @@ import Navbar from './components/Navbar';
 import Kiosk from './pages/Kiosk/Kiosk';
 import Admin from './pages/Admin/Admin';
 import Login from './pages/Auth/Login';
-import Register from './pages/Auth/Register';
 import SetupNeeded from './pages/SetupNeeded';
 import { AuthProvider } from './contexts/AuthContext';
 import RequireAuth from './contexts/RequireAuth';
@@ -36,7 +35,6 @@ function App() {
           <main className="main-content">
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
               <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
               <Route path="/" element={<Kiosk />} />
               <Route path="*" element={<Navigate to="/" replace />} />

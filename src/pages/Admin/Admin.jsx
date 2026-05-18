@@ -6,6 +6,7 @@ import FaceEnrollModal from '../../components/FaceEnrollModal';
 import EditEmpleadoModal from './EditEmpleadoModal';
 import RegistrosTab from './RegistrosTab';
 import ReportesTab from './ReportesTab';
+import AdminsTab from './AdminsTab';
 import '../../components/FaceEnrollModal.css';
 import './Admin.css';
 
@@ -127,6 +128,12 @@ const Admin = () => {
           className={`tab ${tab === 'reportes' ? 'active' : ''}`}
           onClick={() => setTab('reportes')}
         >Reportes</button>
+        {isSuperAdmin && (
+          <button
+            className={`tab ${tab === 'admins' ? 'active' : ''}`}
+            onClick={() => setTab('admins')}
+          >Admins</button>
+        )}
       </div>
 
       {tab === 'empleados' && (
@@ -227,6 +234,7 @@ const Admin = () => {
 
       {tab === 'registros' && <RegistrosTab />}
       {tab === 'reportes' && <ReportesTab />}
+      {tab === 'admins' && isSuperAdmin && <AdminsTab />}
 
       {enrollFor && (
         <FaceEnrollModal

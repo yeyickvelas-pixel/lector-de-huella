@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import './Auth.css';
 
@@ -52,8 +52,8 @@ const Login = () => {
           {loading ? 'Entrando…' : 'Entrar'}
         </button>
       </form>
-      <div className="auth-switch">
-        ¿No tienes cuenta? <Link to="/register">Regístrate</Link>
+      <div className="auth-switch" style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+        Solo los administradores autorizados pueden entrar.
       </div>
     </div>
   );
